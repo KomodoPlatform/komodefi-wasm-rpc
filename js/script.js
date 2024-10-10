@@ -234,7 +234,9 @@ function updateLogs() {
 
 // The script starts here
 
-const conf = { "gui": "WASMTEST", "mm2": 1, "passphrase": "wasmtest", "allow_weak_password": true, "rpc_password": "RPC_UserP@SSW0RD", "netid": 8762, "coins": [{ "coin": "ETH", "protocol": { "type": "ETH" } }, { "coin": "RICK", "overwintered": 1, "txversion": 4, "protocol": { "type": "UTXO" } }, { "coin": "MORTY", "overwintered": 1, "txversion": 4, "protocol": { "type": "UTXO" } }] };
+
+
+const conf = { "gui": "WASMTEST", "mm2": 1, "passphrase": "wasmtest", "allow_weak_password": true, "rpc_password": "RPC_UserP@SSW0RD", "netid": 8762 };
 
 (async function () {
     const init_wasm_resp = await init_wasm();
@@ -246,9 +248,15 @@ const conf = { "gui": "WASMTEST", "mm2": 1, "passphrase": "wasmtest", "allow_wea
         }
     }, 1000);
 
+    const conf_js = (conf);
+    if (!conf_js.coins) {
+        let coinsUrl = new URL("/coins", window.location.origin);
+        let coins = await fetch(coinsUrl);
+        let coinsJson = await coins.json();
+        conf_js.coins = coinsJson;
+    }
 
-
-    const mm2StartResp = await START_MM2(JSON.stringify(conf));
+    const mm2StartResp = await START_MM2(JSON.stringify(conf_js));
     console.log(mm2StartResp)
 
     const cleanupConnectionCheckAndMM2 = () => {
