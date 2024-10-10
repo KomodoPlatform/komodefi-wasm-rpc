@@ -50,3 +50,19 @@ yarn preview
 
 - It will create a simple site with the wasm lib running at http://localhost:3000/
 - The site has KDF's logs and WebSocket connection status
+
+6. Update coins
+
+Update the coins file by running the following command. It just needs a url that has a coins json in valid format
+
+```bash
+./update_coins.sh https://raw.githubusercontent.com/KomodoPlatform/coins/master/coins
+```
+
+7. Update the wasm lib
+
+```bash
+./update_wasm.sh https://sdk.devbuilds.komodo.earth/dev/kdf_e65fefe-wasm.zip
+```
+
+It just needs a url that has a wasm lib in valid format
