@@ -7,7 +7,7 @@ This project helps create a simple RPC interface for the wasm version of Komodo 
 1. Clone the repository
 
 ```bash
-git clone https://github.com/gcharang/komodefi-wasm-rpc.git
+git clone https://github.com/KomodoPlatform/komodefi-wasm-rpc
 ```
 
 2. Install nvm, node and yarn
