@@ -45,11 +45,14 @@ const minimal_args = [
 
 const wss = new WebSocket.Server({ port: process.env.VITE_WS_PORT });
 console.log(`WebSocket server started on port ${process.env.VITE_WS_PORT}`);
+const PORT = process.env.VITE_RPC_PORT;
 
 let connectedClient = null;
 
 wss.on('connection', (ws) => {
-  console.log('New connection');
+  console.log(
+    `New WebSocket connection received. Ready to receive RPC requests at http://127.0.0.1:${PORT}/rpc`,
+  );
   connectedClient = ws;
 
   // ws.on('message', (message, isBinary) => {
@@ -59,7 +62,7 @@ wss.on('connection', (ws) => {
   // });
 
   ws.on('close', () => {
-    console.log('Client disconnected');
+    console.log('WebSocket client disconnected');
     connectedClient = null;
   });
 });
@@ -86,7 +89,8 @@ const server = http.createServer((req, res) => {
             const receivedMessageObj = JSON.parse(receivedMessage);
             if (receivedMessageObj.uuid === uuid) {
               res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ status: 'success', message: receivedMessageObj.message }));
+              //res.end(JSON.stringify({ status: 'success', message: receivedMessageObj.message }));
+              res.end(JSON.stringify(receivedMessageObj.message));
             }
           });
         } else {
@@ -104,9 +108,8 @@ const server = http.createServer((req, res) => {
   }
 });
 
-const PORT = process.env.VITE_RPC_PORT;
 server.listen(PORT, () => {
-  console.log(`HTTP server running on port ${PORT}`);
+  console.log(`RPC server started on port ${PORT}, please wait`);
 });
 
 (async () => {
@@ -116,9 +119,40 @@ server.listen(PORT, () => {
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   const page = await browser.newPage();
-  console.log('Page created');
-  await page.goto(`http://localhost:${process.env.VITE_WEB_PORT}`);
-  console.log('Page loaded');
-  // Keep the container running
-  // while (true) { await new Promise(r => setTimeout(r, 1000)); }
+  console.log('Chrome Page created');
+  const maxRetries = 50;
+  const retryDelay = 2000; // 2 seconds
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Check if the endpoint is active
+      await new Promise((resolve, reject) => {
+        const req = http.get(`http://127.0.0.1:${process.env.VITE_WEB_PORT}`, (res) => {
+          if (res.statusCode === 200) {
+            resolve();
+          } else {
+            reject(new Error(`Web server responded with status code ${res.statusCode}`));
+          }
+        });
+
+        req.on('error', reject);
+        req.end();
+      });
+
+      // If the check passes, navigate to the page
+      await page.goto(`http://127.0.0.1:${process.env.VITE_WEB_PORT}`);
+      console.log('KDF Page loaded successfully');
+      break; // Exit the loop if successful
+    } catch (error) {
+      console.error(`Checking web server status: attempt ${attempt} failed: ${error.message}`);
+      if (attempt === maxRetries) {
+        console.error("Max retries reached. Web server didn't start.");
+        await browser.close();
+        process.exit(1);
+      } else {
+        console.log(`Retrying in ${retryDelay / 1000} seconds...`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      }
+    }
+  }
 })();
