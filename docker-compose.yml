@@ -1,0 +1,12 @@
+services:
+  server:
+    container_name: kdf-wasm-rpc
+    build:
+      context: ./
+      dockerfile: ./docker_files/Dockerfile
+    ports:
+      - '7777:7777'
+      - '7783:7783'
+      - '3000:3000'
+    volumes:
+      - .:/app
