@@ -8,6 +8,7 @@ const pm2 = require('pm2');
 const fs = require('fs');
 const { exec } = require('child_process');
 const path = require('path');
+const ProgressBar = require('progress');
 env.config();
 
 const minimal_args = [
@@ -175,11 +176,45 @@ const server = http.createServer((req, res) => {
           }
 
           fetch(wasm_lib_url)
-            .then((response) => response.arrayBuffer())
+            .then((response) => {
+              const totalSize = parseInt(response.headers.get('content-length'), 10);
+              let downloadedSize = 0;
+
+              console.log(
+                `Starting download of ${zipfile_name}. Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`,
+              );
+
+              const reader = response.body.getReader();
+              return new Response(
+                new ReadableStream({
+                  async start(controller) {
+                    let previousProgress = 0;
+                    while (true) {
+                      const { done, value } = await reader.read();
+                      if (done) break;
+                      downloadedSize += value.length;
+                      const progress = ((downloadedSize / totalSize) * 100).toFixed(2);
+                      const downloadedMB = (downloadedSize / 1024 / 1024).toFixed(2);
+                      const totalMB = (totalSize / 1024 / 1024).toFixed(2);
+                      // Only log progress if it has increased by 10% or more
+                      if (progress - previousProgress >= 10) {
+                        console.log(
+                          `Downloaded ${downloadedMB} MB of ${totalMB} MB (${progress}%)`,
+                        );
+                        previousProgress = progress;
+                      }
+                      controller.enqueue(value);
+                    }
+                    controller.close();
+                  },
+                }),
+              ).arrayBuffer();
+            })
             .then((arrayBuffer) => {
               const buffer = Buffer.from(arrayBuffer);
               const zipfile_path = path.join(kdf_zips_dir, zipfile_name);
               fs.writeFileSync(zipfile_path, buffer);
+              console.log(`Download complete. File saved to ${zipfile_path}`);
 
               // Extract version from filename
               const basename = path.basename(zipfile_name, '.zip');
@@ -187,6 +222,7 @@ const server = http.createServer((req, res) => {
               const version = temp.split('-')[0];
 
               // Unzip and process files
+              console.log('Extracting and processing files...');
               exec(
                 `
                 cd "${kdf_zips_dir}" &&
@@ -233,7 +269,10 @@ const server = http.createServer((req, res) => {
                           console.log('[web-server]:Process restarted successfully');
                         }
                         pm2.disconnect();
-                        puppeteerPage.reload();
+                        checkIfWebServerIsRunning(async () => {
+                          await puppeteerPage.reload();
+                          console.log('KDF Page reloaded successfully');
+                        });
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         res.end(
                           JSON.stringify({
@@ -311,6 +350,13 @@ server.listen(PORT, () => {
   });
   puppeteerPage = await browser.newPage();
   console.log('Chrome Page created');
+  checkIfWebServerIsRunning(async () => {
+    await puppeteerPage.goto(`http://127.0.0.1:${process.env.VITE_WEB_PORT}`);
+    console.log('KDF Page loaded successfully');
+  });
+})();
+
+async function checkIfWebServerIsRunning(cb) {
   const maxRetries = 50;
   const retryDelay = 2000; // 2 seconds
 
@@ -330,9 +376,8 @@ server.listen(PORT, () => {
         req.end();
       });
 
-      // If the check passes, navigate to the page
-      await puppeteerPage.goto(`http://127.0.0.1:${process.env.VITE_WEB_PORT}`);
-      console.log('KDF Page loaded successfully');
+      // If the check passes, callback
+      await cb();
       break; // Exit the loop if successful
     } catch (error) {
       console.error(`Checking web server status: attempt ${attempt} failed: ${error.message}`);
@@ -346,4 +391,4 @@ server.listen(PORT, () => {
       }
     }
   }
-})();
+}
