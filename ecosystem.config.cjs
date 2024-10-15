@@ -1,8 +1,8 @@
 module.exports = {
   apps: [
     {
-      name: 'dev-server',
-      script: 'yarn dev',
+      name: 'web-server',
+      script: 'yarn preview',
       watch: false,
       autorestart: true,
     },
