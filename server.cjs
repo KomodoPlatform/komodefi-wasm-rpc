@@ -104,6 +104,14 @@ const server = http.createServer((req, res) => {
           },
         }),
       );
+    } else if (parsedUrl.pathname === '/logs') {
+      const query = parsedUrl.query;
+      const limit = query.limit ? parseInt(query.limit, 10) : LOGSARRAY.length;
+
+      const logsToReturn = LOGSARRAY.slice(-limit);
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'success', message: logsToReturn }));
     }
   } else if (req.method === 'POST') {
     if (parsedUrl.pathname === '/admin') {

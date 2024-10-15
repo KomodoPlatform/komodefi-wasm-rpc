@@ -70,7 +70,7 @@ yarn preview
 
 3) Visit the site at http://localhost:3000/
 
-## Sending a request
+## Sending a request (POST)
 
 A curl request will look like this:
 
@@ -98,7 +98,7 @@ It just needs a url that has a wasm lib in valid format
 
 ## Misc features
 
-### Reload the page running the KDF lib
+### Reload the page running the KDF lib (POST)
 
 Use the `reload_kdf_page` action to reload the page running the wasm lib
 
@@ -124,7 +124,7 @@ curl http://localhost:7783/admin -d '{
 }'
 ```
 
-### Restart the KDF lib on the same page
+### Restart the KDF lib on the same page (POST)
 
 ```bash
 curl http://localhost:7783/admin -d '{
@@ -146,8 +146,17 @@ curl http://localhost:7783/admin -d '{
 }'
 ```
 
+### Get logs (GET)
 
-### Know status
+`/logs` endpoint returns the logs in the server's memory, it has a `limit` query param which determines how many logs will be returned. If no limit is provided, it will return all logs (up to the limit set in the .env file)
+
+```bash
+curl http://localhost:7783/logs?limit=100
+```
+
+logs are also written to `mm2.log` file in the root directory and it can be tailed to get the logs in real time
+
+### Know status (GET)
 
 ```bash
 curl http://localhost:7783/status
