@@ -6,6 +6,8 @@ const puppeteer = require('puppeteer');
 const env = require('dotenv');
 const pm2 = require('pm2');
 const fs = require('fs');
+const { exec } = require('child_process');
+const path = require('path');
 env.config();
 
 const minimal_args = [
@@ -155,11 +157,108 @@ const server = http.createServer((req, res) => {
             });
           } else {
             res.writeHead(503, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ status: 'error', message: 'Client is offline' }));
+            res.end(
+              JSON.stringify({
+                status: 'error',
+                message: 'Webpage running KDF is not connected to websocket',
+              }),
+            );
           }
+        } else if (body.action === 'update_wasm_lib') {
+          const wasm_lib_url = body.wasm_lib_url;
+          const zipfile_name = wasm_lib_url.split('/').pop();
+          const kdf_zips_dir = path.join(__dirname, 'kdf_zips');
+
+          // Ensure kdf_zips directory exists
+          if (!fs.existsSync(kdf_zips_dir)) {
+            fs.mkdirSync(kdf_zips_dir);
+          }
+
+          fetch(wasm_lib_url)
+            .then((response) => response.arrayBuffer())
+            .then((arrayBuffer) => {
+              const buffer = Buffer.from(arrayBuffer);
+              const zipfile_path = path.join(kdf_zips_dir, zipfile_name);
+              fs.writeFileSync(zipfile_path, buffer);
+
+              // Extract version from filename
+              const basename = path.basename(zipfile_name, '.zip');
+              const temp = basename.split('_').slice(1).join('_');
+              const version = temp.split('-')[0];
+
+              // Unzip and process files
+              exec(
+                `
+                cd "${kdf_zips_dir}" &&
+                mkdir -p temp &&
+                unzip -o "${zipfile_name}" -d temp &&
+                cd temp &&
+                mv kdflib.js ../../js/kdflib.js &&
+                mv kdflib.d.ts ../../js/kdflib.d.ts &&
+                rsync -avh --delete snippets/ ../../js/snippets/ &&
+                mv kdflib_bg.wasm ../../public/kdflib_bg_${version}.wasm &&
+                cd .. &&
+                rm -rf temp
+              `,
+                (error, stdout, stderr) => {
+                  if (error) {
+                    console.error(`Extraction error: ${error}`);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(
+                      JSON.stringify({
+                        status: 'error',
+                        message: 'Failed to extract WASM library',
+                      }),
+                    );
+                  } else {
+                    // Update .env file
+                    const envPath = path.join(__dirname, '.env');
+                    let envContent = fs.readFileSync(envPath, 'utf8');
+                    envContent = envContent.replace(
+                      /VITE_WASM_BIN=.*/,
+                      `VITE_WASM_BIN=kdflib_bg_${version}.wasm`,
+                    );
+                    fs.writeFileSync(envPath, envContent);
+                    pm2.connect((err) => {
+                      if (err) {
+                        console.error('Error connecting to PM2:', err);
+                        process.exit(2);
+                      }
+
+                      // Restart a specific process by name
+                      pm2.restart('web-server', (err) => {
+                        if (err) {
+                          console.error('[web-server]: Error restarting process:', err);
+                        } else {
+                          console.log('[web-server]:Process restarted successfully');
+                        }
+                        pm2.disconnect();
+                        puppeteerPage.reload();
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(
+                          JSON.stringify({
+                            status: 'success',
+                            action: 'update_wasm_lib',
+                            version: version,
+                          }),
+                        );
+                      });
+                    });
+                  }
+                },
+              );
+            })
+            .catch((error) => {
+              console.error(`Fetch error: ${error}`);
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(
+                JSON.stringify({ status: 'error', message: 'Failed to download WASM library' }),
+              );
+            });
+        } else {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'error', message: 'Action not found/not recognized' }));
         }
-        res.writeHead(405, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'error', message: 'Action not found/not recognized' }));
       });
     } else if (parsedUrl.pathname === '/rpc') {
       let body = '';

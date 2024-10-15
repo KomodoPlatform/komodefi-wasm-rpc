@@ -50,7 +50,7 @@ docker compose down && docker compose up
 
 ## Usage without docker
 
-1) Run the RPC and WebSocket server
+1. Run the RPC and WebSocket server
 
 ```bash
 node server.cjs
@@ -68,7 +68,7 @@ yarn preview
 - It will create a simple site with the wasm lib running at http://localhost:3000/
 - The site will connect to the WebSocket server running at ws://localhost:7777/ and wait for RPC requests
 
-3) Visit the site at http://localhost:3000/
+3. Visit the site at http://localhost:3000/
 
 ## Sending a request (POST)
 
@@ -97,6 +97,15 @@ If you have a coins array in MM2.json, the kdf wasm lib will use that instead of
 It just needs a url that has a wasm lib in valid format
 
 ## Misc features
+
+### Update the wasm lib (POST)
+
+```bash
+curl http://localhost:7783/admin -d '{
+  "action": "update_wasm_lib",
+  "wasm_lib_url": "https://sdk.devbuilds.komodo.earth/dev/kdf_e65fefe-wasm.zip"
+}'
+```
 
 ### Reload the page running the KDF lib (POST)
 
