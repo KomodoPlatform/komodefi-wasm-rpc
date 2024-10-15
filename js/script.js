@@ -246,8 +246,16 @@ function updateLogs() {
       connectWs();
     }
   }, 1000);
+  let conf_js;
 
-  const conf_js = JSON.parse(JSON.stringify(mm2_conf));
+  const urlParams = new URLSearchParams(window.location.search);
+  const mm2_conf_encoded = urlParams.get('mm2_conf');
+  if (mm2_conf_encoded) {
+    conf_js = JSON.parse(atob(mm2_conf_encoded));
+  } else {
+    conf_js = JSON.parse(JSON.stringify(mm2_conf));
+  }
+
   if (!conf_js.coins) {
     let coinsUrl = new URL('/coins', window.location.origin);
     let coins = await fetch(coinsUrl);

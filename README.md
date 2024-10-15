@@ -116,10 +116,16 @@ curl http://localhost:7783/admin -d '{
   "mm2_conf": {
     "gui": "MM2_WASM_RPC_TESTER",
     "mm2": 1,
-    "passphrase": "wasmtest",
+    "passphrase": "wasmtest1",
     "allow_weak_password": true,
     "rpc_password": "RPC_UserP@SSW0RD",
     "netid": 8762
   }
 }'
+```
+
+### Know status
+
+```bash
+curl http://localhost:7783/status
 ```

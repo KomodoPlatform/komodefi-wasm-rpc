@@ -69,9 +69,8 @@ wss.on('connection', (ws) => {
 });
 
 const server = http.createServer((req, res) => {
-  if (req.method === 'POST') {
-    const parsedUrl = url.parse(req.url, true);
-
+  const parsedUrl = url.parse(req.url, true);
+  if (req.method === 'GET') {
     if (parsedUrl.pathname === '/status') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
@@ -85,7 +84,7 @@ const server = http.createServer((req, res) => {
         }),
       );
     }
-
+  } else if (req.method === 'POST') {
     if (parsedUrl.pathname === '/admin') {
       let body = '';
 

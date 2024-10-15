@@ -9,7 +9,7 @@ module.exports = {
     {
       name: 'main-server',
       script: 'server.cjs',
-      watch: false,
+      watch: true,
       autorestart: true,
     },
   ],
