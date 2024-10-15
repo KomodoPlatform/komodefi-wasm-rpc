@@ -9,7 +9,7 @@ WORKDIR /app
 #COPY package.json yarn.lock ./
 #COPY ./docker_files/entrypoint.sh /entrypoint.sh
 
-#RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile
 
 RUN yarn global add pm2
 
@@ -22,6 +22,6 @@ RUN yarn global add pm2
 
 #COPY . .
 
-EXPOSE 7777 7783 3000
+#EXPOSE ${VITE_WS_PORT} ${VITE_RPC_PORT} ${VITE_WEB_PORT}
 
 CMD yarn install --frozen-lockfile && pm2-runtime ecosystem.config.cjs

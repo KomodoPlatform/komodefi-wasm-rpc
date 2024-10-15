@@ -3,6 +3,9 @@ const { v4: uuidv4 } = require('uuid');
 const http = require('http');
 const url = require('url');
 const puppeteer = require('puppeteer');
+const env = require('dotenv');
+
+env.config();
 
 const minimal_args = [
   '--autoplay-policy=user-gesture-required',
@@ -40,7 +43,9 @@ const minimal_args = [
   '--use-mock-keychain',
 ];
 
-const wss = new WebSocket.Server({ port: 7777 });
+const wss = new WebSocket.Server({ port: process.env.VITE_WS_PORT });
+console.log(`WebSocket server started on port ${process.env.VITE_WS_PORT}`);
+
 let connectedClient = null;
 
 wss.on('connection', (ws) => {
@@ -99,12 +104,10 @@ const server = http.createServer((req, res) => {
   }
 });
 
-const PORT = 7783;
+const PORT = process.env.VITE_RPC_PORT;
 server.listen(PORT, () => {
   console.log(`HTTP server running on port ${PORT}`);
 });
-
-console.log('WebSocket server started on port 7777');
 
 (async () => {
   console.log('Starting browser');
@@ -114,7 +117,7 @@ console.log('WebSocket server started on port 7777');
   });
   const page = await browser.newPage();
   console.log('Page created');
-  await page.goto('http://localhost:3000');
+  await page.goto(`http://localhost:${process.env.VITE_WEB_PORT}`);
   console.log('Page loaded');
   // Keep the container running
   // while (true) { await new Promise(r => setTimeout(r, 1000)); }

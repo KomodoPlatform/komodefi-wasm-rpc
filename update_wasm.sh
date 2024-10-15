@@ -28,5 +28,10 @@ mv kdflib_bg.wasm ../../public/kdflib_bg_$version.wasm
 cd ..
 rm -rf temp
 cd ..
-echo "VITE_WASM_BIN=kdflib_bg_$version.wasm" > .env
 
+# Update only the VITE_WASM_BIN value in the .env file
+if grep -q "VITE_WASM_BIN=" .env; then
+    sed -i.bak "s/VITE_WASM_BIN=.*/VITE_WASM_BIN=kdflib_bg_$version.wasm/" .env && rm .env.bak
+else
+    echo "VITE_WASM_BIN=kdflib_bg_$version.wasm" >>.env
+fi

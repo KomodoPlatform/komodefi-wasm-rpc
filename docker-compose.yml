@@ -5,8 +5,11 @@ services:
       context: ./
       dockerfile: ./docker_files/Dockerfile
     ports:
-      - '7777:7777'
-      - '7783:7783'
-      - '3000:3000'
+      - '${VITE_WS_PORT}:${VITE_WS_PORT}'
+      - '${VITE_RPC_PORT}:${VITE_RPC_PORT}'
+      - '${VITE_WEB_PORT}:${VITE_WEB_PORT}'
     volumes:
       - .:/app
+      - kdf-rpc-node_modules:/app/node_modules
+volumes:
+  kdf-rpc-node_modules: {}

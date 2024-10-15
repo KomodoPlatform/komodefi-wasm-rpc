@@ -18,7 +18,7 @@ import init, {
 } from './kdflib.js';
 
 /////////////WSS stuff
-const wsUri = 'ws://localhost:7777';
+const wsUri = `ws://localhost:${import.meta.env.VITE_WS_PORT}`;
 
 const connectionStatusDiv = document.getElementById('connection-status');
 const outputDiv = document.getElementById('output');
