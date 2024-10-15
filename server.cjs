@@ -51,7 +51,7 @@ let connectedClient = null;
 
 wss.on('connection', (ws) => {
   console.log(
-    `New WebSocket connection received. Ready to receive RPC requests at http://127.0.0.1:${PORT}/rpc`,
+    `WebSocket client connection received. Ready to receive RPC requests at http://127.0.0.1:${PORT}/rpc`,
   );
   connectedClient = ws;
 

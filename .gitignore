@@ -1,5 +1,6 @@
 kdf_zips
 coins_versions
+.env
 
 # Logs
 logs
