@@ -42,6 +42,12 @@ docker compose up
 - It will start a web socket server at ws://localhost:7777/ (typically don't need to care about this)
 - It will start a rpc server at http://localhost:7783/ and listens for POST requests at http://localhost:7783/rpc
 
+If you update the kdf wasm lib, restart the docker container for the changes to take effect:
+
+```bash
+docker compose down && docker compose up
+```
+
 ## Usage without docker
 
 1) Run the RPC and WebSocket server
@@ -79,6 +85,8 @@ Update the coins file by running the following command. It just needs a url that
 ```bash
 ./update_coins.sh https://raw.githubusercontent.com/KomodoPlatform/coins/master/coins
 ```
+
+If you have a coins array in MM2.json, the kdf wasm lib will use that instead of using the coins file downloaded from this script
 
 ## Update the wasm lib
 
