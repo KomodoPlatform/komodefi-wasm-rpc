@@ -11,5 +11,7 @@ services:
     volumes:
       - .:/app
       - kdf-rpc-node_modules:/app/node_modules
+      - kdf-rpc-dist:/app/dist
 volumes:
   kdf-rpc-node_modules: {}
+  kdf-rpc-dist: {}
