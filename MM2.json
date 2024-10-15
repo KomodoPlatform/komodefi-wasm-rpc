@@ -1,0 +1,8 @@
+{
+  "gui": "MM2_WASM_RPC_TESTER",
+  "mm2": 1,
+  "passphrase": "wasmtest",
+  "allow_weak_password": true,
+  "rpc_password": "RPC_UserP@SSW0RD",
+  "netid": 8762
+}

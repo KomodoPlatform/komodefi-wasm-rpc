@@ -59,7 +59,7 @@ yarn preview
 ```
 
 - It will create a simple site with the wasm lib running at http://localhost:3000/
-- The site will connect to the Ws server running at ws://localhost:7777/ and wait for RPC requests
+- The site will connect to the WebSocket server running at ws://localhost:7777/ and wait for RPC requests
 
 3) Visit the site at http://localhost:3000/
 

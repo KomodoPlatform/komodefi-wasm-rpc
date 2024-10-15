@@ -5,6 +5,7 @@
 // will "boot" the module and make it ready to use.
 // Currently, browsers don't support natively imported WebAssembly as an ES module, but
 // eventually the manual initialization won't be required!
+import mm2_conf from '../MM2.json';
 import init, {
   LogLevel,
   MainStatus,
@@ -236,15 +237,6 @@ function updateLogs() {
 
 // The script starts here
 
-const conf = {
-  gui: 'WASMTEST',
-  mm2: 1,
-  passphrase: 'wasmtest',
-  allow_weak_password: true,
-  rpc_password: 'RPC_UserP@SSW0RD',
-  netid: 8762,
-};
-
 (async function () {
   const init_wasm_resp = await init_wasm();
   console.log(init_wasm_resp);
@@ -255,7 +247,7 @@ const conf = {
     }
   }, 1000);
 
-  const conf_js = conf;
+  const conf_js = JSON.parse(mm2_conf);
   if (!conf_js.coins) {
     let coinsUrl = new URL('/coins', window.location.origin);
     let coins = await fetch(coinsUrl);
