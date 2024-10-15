@@ -247,7 +247,7 @@ function updateLogs() {
     }
   }, 1000);
 
-  const conf_js = JSON.parse(mm2_conf);
+  const conf_js = JSON.parse(JSON.stringify(mm2_conf));
   if (!conf_js.coins) {
     let coinsUrl = new URL('/coins', window.location.origin);
     let coins = await fetch(coinsUrl);
