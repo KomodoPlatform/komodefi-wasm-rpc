@@ -4,6 +4,7 @@ const http = require('http');
 const url = require('url');
 const puppeteer = require('puppeteer');
 const env = require('dotenv');
+const pm2 = require('pm2');
 
 env.config();
 
@@ -48,7 +49,7 @@ console.log(`WebSocket server started on port ${process.env.VITE_WS_PORT}`);
 const PORT = process.env.VITE_RPC_PORT;
 
 let connectedClient = null;
-
+let puppeteerPage = null;
 wss.on('connection', (ws) => {
   console.log(
     `WebSocket client connection received. Ready to receive RPC requests at http://127.0.0.1:${PORT}/rpc`,
@@ -71,7 +72,42 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST') {
     const parsedUrl = url.parse(req.url, true);
 
-    if (parsedUrl.pathname === '/rpc') {
+    if (parsedUrl.pathname === '/status') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          status: 'success',
+          message: {
+            rpc_server_running: true,
+            ws_client_connected:
+              connectedClient && connectedClient.readyState === WebSocket.OPEN ? true : false,
+          },
+        }),
+      );
+    }
+
+    if (parsedUrl.pathname === '/admin') {
+      let body = '';
+
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on('end', () => {
+        body = JSON.parse(body);
+        if (body.action === 'restart_kdf' && body.mm2_conf) {
+          const encoded_mm2_conf = btoa(JSON.stringify(body.mm2_conf));
+          // console.log(encoded_mm2_conf)
+          puppeteerPage.goto(
+            `http://127.0.0.1:${process.env.VITE_WEB_PORT}/?mm2_conf=${encoded_mm2_conf}`,
+          );
+        } else if (body.action === 'restart_kdf') {
+          puppeteerPage.reload();
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'success', message: 'KDF lib restarted' }));
+      });
+    } else if (parsedUrl.pathname === '/rpc') {
       let body = '';
 
       req.on('data', (chunk) => {
@@ -100,7 +136,7 @@ const server = http.createServer((req, res) => {
       });
     } else {
       res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'error', message: 'Not found' }));
+      res.end(JSON.stringify({ status: 'error', message: 'Endpoint not found' }));
     }
   } else {
     res.writeHead(405, { 'Content-Type': 'application/json' });
@@ -118,7 +154,7 @@ server.listen(PORT, () => {
     executablePath: '/usr/bin/google-chrome',
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
-  const page = await browser.newPage();
+  puppeteerPage = await browser.newPage();
   console.log('Chrome Page created');
   const maxRetries = 50;
   const retryDelay = 2000; // 2 seconds
@@ -140,7 +176,7 @@ server.listen(PORT, () => {
       });
 
       // If the check passes, navigate to the page
-      await page.goto(`http://127.0.0.1:${process.env.VITE_WEB_PORT}`);
+      await puppeteerPage.goto(`http://127.0.0.1:${process.env.VITE_WEB_PORT}`);
       console.log('KDF Page loaded successfully');
       break; // Exit the loop if successful
     } catch (error) {
