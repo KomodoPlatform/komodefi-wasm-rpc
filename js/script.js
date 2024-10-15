@@ -36,11 +36,23 @@ async function connectWs() {
 
   websocket.onmessage = async function (event) {
     const receivedMessage = event.data;
-    const { message: request_js, uuid } = JSON.parse(receivedMessage);
-    // outputDiv.textContent = "Received: " + JSON.stringify(JSON.parse(receivedMessage)) + "";
-    // outputDiv.textContent = JSON.stringify(request_js);
-    const response = await RPC_REQUEST(request_js);
-    sendWsMessage(response, uuid);
+    const receivedMessageObj = JSON.parse(receivedMessage);
+    if (receivedMessageObj.action && receivedMessageObj.action === 'restart_kdf') {
+      await STOP_MM2();
+      if (receivedMessageObj.mm2_conf) {
+        const conf_js = await checkAndAddCoins(receivedMessageObj.mm2_conf);
+        await START_MM2(JSON.stringify(conf_js));
+      } else {
+        const conf_js = await checkAndAddCoins(mm2_conf);
+        await START_MM2(JSON.stringify(conf_js));
+      }
+      sendWsMessage('{"action": "restart_kdf", "response": "success"}', receivedMessageObj.uuid);
+    } else if (receivedMessageObj.message && receivedMessageObj.uuid) {
+      // outputDiv.textContent = "Received: " + JSON.stringify(JSON.parse(receivedMessage)) + "";
+      // outputDiv.textContent = JSON.stringify(request_js);
+      const response = await RPC_REQUEST(receivedMessageObj.message);
+      sendWsMessage(response, receivedMessageObj.uuid);
+    }
   };
 
   websocket.onerror = function (event) {
@@ -61,6 +73,12 @@ function sendWsMessage(message, uuid) {
     websocket.send(JSON.stringify({ message: message, uuid: uuid }));
   } else {
     errorDiv.textContent = 'Error: Connection not open.';
+  }
+}
+
+function sendLogsToServer(logObject, websocket) {
+  if (websocket && websocket.readyState === WebSocket.OPEN) {
+    websocket.send(JSON.stringify({ logObject: logObject }));
   }
 }
 
@@ -109,29 +127,28 @@ function handle_log(level, line) {
     case LogLevel.Off:
       break;
     case LogLevel.Error:
-      pushToLimitedArray(LogArray, { level: 'error', line: line });
+      pushToLimitedArray(LogArray, { level: 'error', line: line, time: Date.now() }, websocket);
       console.error(line);
       break;
     case LogLevel.Warn:
-      pushToLimitedArray(LogArray, { level: 'warn', line: line });
+      pushToLimitedArray(LogArray, { level: 'warn', line: line, time: Date.now() }, websocket);
       console.warn(line);
       break;
     case LogLevel.Info:
-      pushToLimitedArray(LogArray, { level: 'info', line: line });
+      pushToLimitedArray(LogArray, { level: 'info', line: line, time: Date.now() }, websocket);
       console.info(line);
       break;
     case LogLevel.Debug:
-      pushToLimitedArray(LogArray, { level: 'debug', line: line });
+      pushToLimitedArray(LogArray, { level: 'debug', line: line, time: Date.now() }, websocket);
       console.log(line);
       break;
     case LogLevel.Trace:
     default:
-      // The console.trace method outputs some extra trace from the generated JS glue code which we don't want.
-      pushToLimitedArray(LogArray, { level: 'default', line: line });
+      pushToLimitedArray(LogArray, { level: 'default', line: line, time: Date.now() }, websocket);
       console.debug(line);
       break;
   }
-  updateLogs(); // Add this line to update the logs after each new entry
+  //updateLogs();
 }
 
 function spawn_mm2_status_checking() {
@@ -217,11 +234,12 @@ async function RPC_REQUEST(request_payload) {
   }
 }
 
-function pushToLimitedArray(arr, item, limit = 1000) {
+function pushToLimitedArray(arr, item, limit = 1000, websocket) {
   if (arr.length >= limit) {
     arr.shift(); // Remove the first element
   }
   arr.push(item);
+  sendLogsToServer(item, websocket);
   return arr;
 }
 
@@ -233,6 +251,16 @@ function updateLogs() {
       `<div class="log-entry ${log.level}"><span class="font-bold">[${log.level.toUpperCase()}]</span> ${log.line}</div>`,
   ).join('');
   logsContainer.scrollTop = logsContainer.scrollHeight;
+}
+
+async function checkAndAddCoins(conf_js) {
+  if (!conf_js.coins) {
+    let coinsUrl = new URL('/coins', window.location.origin);
+    let coins = await fetch(coinsUrl);
+    let coinsJson = await coins.json();
+    conf_js.coins = coinsJson;
+  }
+  return conf_js;
 }
 
 // The script starts here
@@ -256,12 +284,7 @@ function updateLogs() {
     conf_js = JSON.parse(JSON.stringify(mm2_conf));
   }
 
-  if (!conf_js.coins) {
-    let coinsUrl = new URL('/coins', window.location.origin);
-    let coins = await fetch(coinsUrl);
-    let coinsJson = await coins.json();
-    conf_js.coins = coinsJson;
-  }
+  conf_js = await checkAndAddCoins(conf_js);
 
   const mm2StartResp = await START_MM2(JSON.stringify(conf_js));
   console.log(mm2StartResp);

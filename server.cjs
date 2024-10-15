@@ -5,7 +5,7 @@ const url = require('url');
 const puppeteer = require('puppeteer');
 const env = require('dotenv');
 const pm2 = require('pm2');
-
+const fs = require('fs');
 env.config();
 
 const minimal_args = [
@@ -94,14 +94,40 @@ const server = http.createServer((req, res) => {
 
       req.on('end', () => {
         body = JSON.parse(body);
-        if (body.action === 'restart_kdf' && body.mm2_conf) {
+        if (body.action === 'reload_kdf_page' && body.mm2_conf) {
           const encoded_mm2_conf = btoa(JSON.stringify(body.mm2_conf));
           // console.log(encoded_mm2_conf)
           puppeteerPage.goto(
             `http://127.0.0.1:${process.env.VITE_WEB_PORT}/?mm2_conf=${encoded_mm2_conf}`,
           );
-        } else if (body.action === 'restart_kdf') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'success', action: 'reload_kdf_page' }));
+        } else if (body.action === 'reload_kdf_page') {
           puppeteerPage.reload();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'success', action: 'reload_kdf_page' }));
+        } else if (body.action === 'restart_kdf') {
+          if (connectedClient && connectedClient.readyState === WebSocket.OPEN) {
+            const uuid = uuidv4();
+            const message = JSON.stringify({
+              action: 'restart_kdf',
+              mm2_conf: body.mm2_conf,
+              uuid: uuid,
+            });
+
+            connectedClient.send(message);
+            connectedClient.on('message', (message) => {
+              const receivedMessage = message.toString();
+              const receivedMessageObj = JSON.parse(receivedMessage);
+              if (receivedMessageObj.response && receivedMessageObj.uuid === uuid) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'success', action: receivedMessage.action }));
+              }
+            });
+          } else {
+            res.writeHead(503, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ status: 'error', message: 'Client is offline' }));
+          }
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'success', message: 'KDF lib restarted' }));
@@ -122,7 +148,10 @@ const server = http.createServer((req, res) => {
           connectedClient.on('message', (message) => {
             const receivedMessage = message.toString();
             const receivedMessageObj = JSON.parse(receivedMessage);
-            if (receivedMessageObj.uuid === uuid) {
+            if (receivedMessageObj.logObject) {
+              console.log(receivedMessageObj.logObject.line);
+              fs.appendFileSync('mm2.log', JSON.stringify(receivedMessageObj.logObject.line));
+            } else if (receivedMessageObj.uuid === uuid) {
               res.writeHead(200, { 'Content-Type': 'application/json' });
               //res.end(JSON.stringify({ status: 'success', message: receivedMessageObj.message }));
               res.end(JSON.stringify(receivedMessageObj.message));

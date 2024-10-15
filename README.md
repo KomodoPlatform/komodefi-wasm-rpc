@@ -98,17 +98,39 @@ It just needs a url that has a wasm lib in valid format
 
 ## Misc features
 
-### Restart the KDF lib
+### Reload the page running the KDF lib
 
-Use the `restart_kdf` action to reload the page running the wasm lib
+Use the `reload_kdf_page` action to reload the page running the wasm lib
+
+```bash
+curl http://localhost:7783/admin -d '{
+  "action": "reload_kdf_page"
+}'
+```
+
+Send the `mm2_conf` param in addition to use a custom MM2 configuration
+
+```bash
+curl http://localhost:7783/admin -d '{
+  "action": "reload_kdf_page",
+  "mm2_conf": {
+    "gui": "MM2_WASM_RPC_TESTER",
+    "mm2": 1,
+    "passphrase": "wasmtest1",
+    "allow_weak_password": true,
+    "rpc_password": "RPC_UserP@SSW0RD",
+    "netid": 8762
+  }
+}'
+```
+
+### Restart the KDF lib on the same page
 
 ```bash
 curl http://localhost:7783/admin -d '{
   "action": "restart_kdf"
 }'
 ```
-
-Send the `mm2_conf` param in addition to use a custom MM2 configuration
 
 ```bash
 curl http://localhost:7783/admin -d '{
@@ -123,6 +145,7 @@ curl http://localhost:7783/admin -d '{
   }
 }'
 ```
+
 
 ### Know status
 
