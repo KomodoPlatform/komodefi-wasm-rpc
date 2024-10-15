@@ -50,6 +50,15 @@ const PORT = process.env.VITE_RPC_PORT;
 
 let connectedClient = null;
 let puppeteerPage = null;
+let LOGSARRAY = [];
+
+function pushToLimitedArray(arr, item, limit = 1000) {
+  if (arr.length >= limit) {
+    arr.shift(); // Remove the first element
+  }
+  arr.push(item);
+  return arr;
+}
 wss.on('connection', (ws) => {
   console.log(
     `WebSocket client connection received. Ready to receive RPC requests at http://127.0.0.1:${PORT}/rpc`,
@@ -61,6 +70,18 @@ wss.on('connection', (ws) => {
   //   console.log('Received message:', message);
   //   ws.send(message);
   // });
+
+  connectedClient.on('message', (message) => {
+    const receivedMessage = message.toString();
+    const receivedMessageObj = JSON.parse(receivedMessage);
+    if (receivedMessageObj.logObject && receivedMessageObj.logObject.line) {
+      pushToLimitedArray(LOGSARRAY, receivedMessageObj, process.env.VITE_LOGS_LIMIT);
+      fs.appendFileSync(
+        'mm2.log',
+        receivedMessageObj.logObject.time + receivedMessageObj.logObject.line + '\n',
+      );
+    }
+  });
 
   ws.on('close', () => {
     console.log('WebSocket client disconnected');
@@ -148,10 +169,7 @@ const server = http.createServer((req, res) => {
           connectedClient.on('message', (message) => {
             const receivedMessage = message.toString();
             const receivedMessageObj = JSON.parse(receivedMessage);
-            if (receivedMessageObj.logObject) {
-              console.log(receivedMessageObj.logObject.line);
-              fs.appendFileSync('mm2.log', JSON.stringify(receivedMessageObj.logObject.line));
-            } else if (receivedMessageObj.uuid === uuid) {
+            if (receivedMessageObj.uuid === uuid) {
               res.writeHead(200, { 'Content-Type': 'application/json' });
               //res.end(JSON.stringify({ status: 'success', message: receivedMessageObj.message }));
               res.end(JSON.stringify(receivedMessageObj.message));

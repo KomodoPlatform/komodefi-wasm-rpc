@@ -28,7 +28,7 @@ yarn install --frozen-lockfile
 cp .env.example .env
 ```
 
-- Change the port values in the .env file if necessary. The VITE_WASM_BIN value will be set automatically when updating the wasm lib using the `update_wasm.sh` script
+- Change the port values in the .env file if necessary, the `VITE_WASM_BIN` value will be set automatically when updating the wasm lib using the `update_wasm.sh` script. the `VITE_LOGS_LIMIT` value will determine how many logs will be stored in the servers's memory
 - Update the MM2.json file with the appropriate values
 
 ## Usage with docker

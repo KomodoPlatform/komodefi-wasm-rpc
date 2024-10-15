@@ -76,17 +76,21 @@ function sendWsMessage(message, uuid) {
   }
 }
 
-function sendLogsToServer(logObject, websocket) {
-  if (websocket && websocket.readyState === WebSocket.OPEN) {
-    websocket.send(JSON.stringify({ logObject: logObject }));
-  }
-}
-
 ///////////////////
 
 const LOG_LEVEL = LogLevel.Info;
 
 const LogArray = [];
+
+// const LogArrayProxy = new Proxy(LogArray, {
+//   set: function (target, property, value) {
+//     target[property] = value;
+//     if (websocket && websocket.readyState === WebSocket.OPEN) {
+//       websocket.send(JSON.stringify({ logObject: value }));
+//     }
+//     return true;
+//   }
+// });
 
 // Loads the wasm file, so we use the
 // default export to inform it where the wasm file is located on the
@@ -127,28 +131,32 @@ function handle_log(level, line) {
     case LogLevel.Off:
       break;
     case LogLevel.Error:
-      pushToLimitedArray(LogArray, { level: 'error', line: line, time: Date.now() }, websocket);
+      pushToLimitedArrayAndSendToServer(LogArray, { level: 'error', line: line, time: Date.now() });
       console.error(line);
       break;
     case LogLevel.Warn:
-      pushToLimitedArray(LogArray, { level: 'warn', line: line, time: Date.now() }, websocket);
+      pushToLimitedArrayAndSendToServer(LogArray, { level: 'warn', line: line, time: Date.now() });
       console.warn(line);
       break;
     case LogLevel.Info:
-      pushToLimitedArray(LogArray, { level: 'info', line: line, time: Date.now() }, websocket);
+      pushToLimitedArrayAndSendToServer(LogArray, { level: 'info', line: line, time: Date.now() });
       console.info(line);
       break;
     case LogLevel.Debug:
-      pushToLimitedArray(LogArray, { level: 'debug', line: line, time: Date.now() }, websocket);
+      pushToLimitedArrayAndSendToServer(LogArray, { level: 'debug', line: line, time: Date.now() });
       console.log(line);
       break;
     case LogLevel.Trace:
     default:
-      pushToLimitedArray(LogArray, { level: 'default', line: line, time: Date.now() }, websocket);
+      pushToLimitedArrayAndSendToServer(LogArray, {
+        level: 'default',
+        line: line,
+        time: Date.now(),
+      });
       console.debug(line);
       break;
   }
-  //updateLogs();
+  updateLogs();
 }
 
 function spawn_mm2_status_checking() {
@@ -234,12 +242,14 @@ async function RPC_REQUEST(request_payload) {
   }
 }
 
-function pushToLimitedArray(arr, item, limit = 1000, websocket) {
+function pushToLimitedArrayAndSendToServer(arr, item, limit = 1000) {
   if (arr.length >= limit) {
     arr.shift(); // Remove the first element
   }
   arr.push(item);
-  sendLogsToServer(item, websocket);
+  if (websocket && websocket.readyState === WebSocket.OPEN) {
+    websocket.send(JSON.stringify({ logObject: item }));
+  }
   return arr;
 }
 
