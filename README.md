@@ -20,7 +20,7 @@ nvm install 18
 npm install -g yarn
 ```
 
-3. Install dependencies and set environment variables
+3. Install dependencies, set environment variables and update MM2.json
 
 ```bash
 cd komodefi-wasm-rpc
@@ -28,7 +28,8 @@ yarn install --frozen-lockfile
 cp .env.example .env
 ```
 
-Change the port values in the .env file if necessary. The VITE_WASM_BIN value will be set automatically when updating the wasm lib using the `update_wasm.sh` script
+- Change the port values in the .env file if necessary. The VITE_WASM_BIN value will be set automatically when updating the wasm lib using the `update_wasm.sh` script
+- Update the MM2.json file with the appropriate values
 
 ## Usage with docker
 
