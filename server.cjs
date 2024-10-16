@@ -181,132 +181,66 @@ const server = http.createServer((req, res) => {
           const wasm_lib_url = body.wasm_lib_url;
           const zipfile_name = wasm_lib_url.split('/').pop();
           const kdf_zips_dir = path.join(__dirname, 'kdf_zips');
+          const zipfile_path = path.join(kdf_zips_dir, zipfile_name);
 
           // Ensure kdf_zips directory exists
           if (!fs.existsSync(kdf_zips_dir)) {
             fs.mkdirSync(kdf_zips_dir);
           }
+          if (fs.existsSync(zipfile_path)) {
+            console.log(`Zip file ${zipfile_name} already exists. Skipping download.`);
+            processZipFile(zipfile_path, kdf_zips_dir, res);
+          } else {
+            fetch(wasm_lib_url)
+              .then((response) => {
+                const totalSize = parseInt(response.headers.get('content-length'), 10);
+                let downloadedSize = 0;
 
-          fetch(wasm_lib_url)
-            .then((response) => {
-              const totalSize = parseInt(response.headers.get('content-length'), 10);
-              let downloadedSize = 0;
+                console.log(
+                  `Starting download of ${zipfile_name}. Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`,
+                );
 
-              console.log(
-                `Starting download of ${zipfile_name}. Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`,
-              );
-
-              const reader = response.body.getReader();
-              return new Response(
-                new ReadableStream({
-                  async start(controller) {
-                    let previousProgress = 0;
-                    while (true) {
-                      const { done, value } = await reader.read();
-                      if (done) break;
-                      downloadedSize += value.length;
-                      const progress = ((downloadedSize / totalSize) * 100).toFixed(2);
-                      const downloadedMB = (downloadedSize / 1024 / 1024).toFixed(2);
-                      const totalMB = (totalSize / 1024 / 1024).toFixed(2);
-                      // Only log progress if it has increased by 10% or more
-                      if (progress - previousProgress >= 10) {
-                        console.log(
-                          `Downloaded ${downloadedMB} MB of ${totalMB} MB (${progress}%)`,
-                        );
-                        previousProgress = progress;
-                      }
-                      controller.enqueue(value);
-                    }
-                    controller.close();
-                  },
-                }),
-              ).arrayBuffer();
-            })
-            .then((arrayBuffer) => {
-              const buffer = Buffer.from(arrayBuffer);
-              const zipfile_path = path.join(kdf_zips_dir, zipfile_name);
-              fs.writeFileSync(zipfile_path, buffer);
-              console.log(`Download complete. File saved to ${zipfile_path}`);
-
-              // Extract version from filename
-              const basename = path.basename(zipfile_name, '.zip');
-              const temp = basename.split('_').slice(1).join('_');
-              const version = temp.split('-')[0];
-
-              // Unzip and process files
-              console.log('Extracting and processing files...');
-              exec(
-                `
-                cd "${kdf_zips_dir}" &&
-                mkdir -p temp &&
-                unzip -o "${zipfile_name}" -d temp &&
-                cd temp &&
-                mv kdflib.js ../../js/kdflib.js &&
-                mv kdflib.d.ts ../../js/kdflib.d.ts &&
-                rm -rf ../../js/snippets/*
-                cp -r snippets/* ../../js/snippets/
-                mv kdflib_bg.wasm ../../public/kdflib_bg_${version}.wasm &&
-                cd .. &&
-                rm -rf temp
-              `,
-                (error, stdout, stderr) => {
-                  if (error) {
-                    console.error(`Extraction error: ${error}`);
-                    res.writeHead(500, { 'Content-Type': 'application/json' });
-                    res.end(
-                      JSON.stringify({
-                        status: 'error',
-                        message: 'Failed to extract WASM library',
-                      }),
-                    );
-                  } else {
-                    // Update .env file
-                    const envPath = path.join(__dirname, '.env');
-                    let envContent = fs.readFileSync(envPath, 'utf8');
-                    envContent = envContent.replace(
-                      /VITE_WASM_BIN=.*/,
-                      `VITE_WASM_BIN=kdflib_bg_${version}.wasm`,
-                    );
-                    fs.writeFileSync(envPath, envContent);
-                    pm2.connect((err) => {
-                      if (err) {
-                        console.error('Error connecting to PM2:', err);
-                        process.exit(2);
-                      }
-
-                      // Restart a specific process by name
-                      pm2.restart('web-server', (err) => {
-                        if (err) {
-                          console.error('[web-server]: Error restarting process:', err);
-                        } else {
-                          console.log('[web-server]:Process restarted successfully');
+                const reader = response.body.getReader();
+                return new Response(
+                  new ReadableStream({
+                    async start(controller) {
+                      let previousProgress = 0;
+                      while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        downloadedSize += value.length;
+                        const progress = ((downloadedSize / totalSize) * 100).toFixed(2);
+                        const downloadedMB = (downloadedSize / 1024 / 1024).toFixed(2);
+                        const totalMB = (totalSize / 1024 / 1024).toFixed(2);
+                        // Only log progress if it has increased by 10% or more
+                        if (progress - previousProgress >= 10) {
+                          console.log(
+                            `Downloaded ${downloadedMB} MB of ${totalMB} MB (${progress}%)`,
+                          );
+                          previousProgress = progress;
                         }
-                        pm2.disconnect();
-                        checkIfWebServerIsRunning(async () => {
-                          await puppeteerPage.reload();
-                          console.log('KDF Page reloaded successfully');
-                        });
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(
-                          JSON.stringify({
-                            status: 'success',
-                            action: 'update_wasm_lib',
-                            version: version,
-                          }),
-                        );
-                      });
-                    });
-                  }
-                },
-              );
-            })
-            .catch((error) => {
-              console.error(`Fetch error: ${error}`);
-              res.writeHead(500, { 'Content-Type': 'application/json' });
-              res.end(
-                JSON.stringify({ status: 'error', message: 'Failed to download WASM library' }),
-              );
-            });
+                        controller.enqueue(value);
+                      }
+                      controller.close();
+                    },
+                  }),
+                ).arrayBuffer();
+              })
+              .then((arrayBuffer) => {
+                const buffer = Buffer.from(arrayBuffer);
+                const zipfile_path = path.join(kdf_zips_dir, zipfile_name);
+                fs.writeFileSync(zipfile_path, buffer);
+                console.log(`Download complete. File saved to ${zipfile_path}`);
+                processZipFile(zipfile_path, kdf_zips_dir, res);
+              })
+              .catch((error) => {
+                console.error(`Fetch error: ${error}`);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(
+                  JSON.stringify({ status: 'error', message: 'Failed to download WASM library' }),
+                );
+              });
+          }
         } else {
           res.writeHead(405, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'error', message: 'Action not found/not recognized' }));
@@ -404,4 +338,77 @@ async function checkIfWebServerIsRunning(cb) {
       }
     }
   }
+}
+
+function processZipFile(zipfile_name, kdf_zips_dir, res) {
+  // Extract version from filename
+  const basename = path.basename(zipfile_name, '.zip');
+  const temp = basename.split('_').slice(1).join('_');
+  const version = temp.split('-')[0];
+  // Unzip and process files
+  console.log('Extracting and processing files...');
+  exec(
+    `
+                cd "${kdf_zips_dir}" &&
+                mkdir -p temp &&
+                unzip -o "${zipfile_name}" -d temp &&
+                cd temp &&
+                mv kdflib.js ../../js/kdflib.js &&
+                mv kdflib.d.ts ../../js/kdflib.d.ts &&
+                rm -rf ../../js/snippets/*
+                cp -r snippets/* ../../js/snippets/
+                mv kdflib_bg.wasm ../../public/kdflib_bg_${version}.wasm &&
+                cd .. &&
+                rm -rf temp
+              `,
+    (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Extraction error: ${error}`);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            status: 'error',
+            message: 'Failed to extract WASM library',
+          }),
+        );
+      } else {
+        // Update .env file
+        const envPath = path.join(__dirname, '.env');
+        let envContent = fs.readFileSync(envPath, 'utf8');
+        envContent = envContent.replace(
+          /VITE_WASM_BIN=.*/,
+          `VITE_WASM_BIN=kdflib_bg_${version}.wasm`,
+        );
+        fs.writeFileSync(envPath, envContent);
+        pm2.connect((err) => {
+          if (err) {
+            console.error('Error connecting to PM2:', err);
+            process.exit(2);
+          }
+
+          // Restart a specific process by name
+          pm2.restart('web-server', (err) => {
+            if (err) {
+              console.error('[web-server]: Error restarting process:', err);
+            } else {
+              console.log('[web-server]:Process restarted successfully');
+            }
+            pm2.disconnect();
+            checkIfWebServerIsRunning(async () => {
+              await puppeteerPage.reload();
+              console.log('KDF Page reloaded successfully');
+            });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                status: 'success',
+                action: 'update_wasm_lib',
+                version: version,
+              }),
+            );
+          });
+        });
+      }
+    },
+  );
 }
