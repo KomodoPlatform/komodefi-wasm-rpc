@@ -16,7 +16,8 @@ cd temp
 mv kdflib.js ../../js/kdflib.js
 mv kdflib.d.ts ../../js/kdflib.d.ts
 # mv kdflib.wasm.d.ts ../../js/kdflib.wasm.d.ts
-rsync -avh --delete snippets/ ../../js/snippets/
+rm -rf ../../js/snippets/*
+cp -r snippets/* ../../js/snippets/
 
 basename=$(basename "$fn" .zip) # Remove .zip from filename
 temp=${basename#*_}

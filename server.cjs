@@ -8,7 +8,6 @@ const pm2 = require('pm2');
 const fs = require('fs');
 const { exec } = require('child_process');
 const path = require('path');
-const ProgressBar = require('progress');
 env.config();
 
 const minimal_args = [
@@ -244,7 +243,8 @@ const server = http.createServer((req, res) => {
                 cd temp &&
                 mv kdflib.js ../../js/kdflib.js &&
                 mv kdflib.d.ts ../../js/kdflib.d.ts &&
-                rsync -avh --delete snippets/ ../../js/snippets/ &&
+                rm -rf ../../js/snippets/*
+                cp -r snippets/* ../../js/snippets/
                 mv kdflib_bg.wasm ../../public/kdflib_bg_${version}.wasm &&
                 cd .. &&
                 rm -rf temp
