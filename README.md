@@ -117,7 +117,7 @@ curl http://localhost:7783/admin -d '{
 }'
 ```
 
-Send the `mm2_conf` param in addition to use a custom MM2 configuration
+Send the `mm2_conf` param and/or `coins_json_url` param in addition to use a custom MM2 configuration and coins file. Fetching the coins file must return a json with a valid coins array
 
 ```bash
 curl http://localhost:7783/admin -d '{
@@ -129,7 +129,8 @@ curl http://localhost:7783/admin -d '{
     "allow_weak_password": true,
     "rpc_password": "RPC_UserP@SSW0RD",
     "netid": 8762
-  }
+  },
+  "coins_json_url": "https://raw.githubusercontent.com/KomodoPlatform/coins/cosmos/coins"
 }'
 ```
 
@@ -151,7 +152,8 @@ curl http://localhost:7783/admin -d '{
     "allow_weak_password": true,
     "rpc_password": "RPC_UserP@SSW0RD",
     "netid": 8762
-  }
+  },
+  "coins_json_url": "https://raw.githubusercontent.com/KomodoPlatform/coins/solana/coins"
 }'
 ```
 

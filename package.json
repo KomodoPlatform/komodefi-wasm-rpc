@@ -21,7 +21,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "rm *.timestamp-*.mjs && vite build",
     "preview": "vite build && vite preview --host 127.0.0.1 --port ${VITE_WEB_PORT:-3000}",
     "prepare": "husky",
     "_format-all": "prettier --write '**/*.{js,jsx,mjs,ts,tsx,css,scss,json,cjs,mjs,yml,yaml}'"

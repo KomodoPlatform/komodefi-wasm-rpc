@@ -126,16 +126,23 @@ const server = http.createServer((req, res) => {
 
       req.on('end', () => {
         body = JSON.parse(body);
-        if (body.action === 'reload_kdf_page' && body.mm2_conf) {
-          const encoded_mm2_conf = btoa(JSON.stringify(body.mm2_conf));
-          // console.log(encoded_mm2_conf)
-          puppeteerPage.goto(
-            `http://127.0.0.1:${process.env.VITE_WEB_PORT}/?mm2_conf=${encoded_mm2_conf}`,
-          );
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ status: 'success', action: 'reload_kdf_page' }));
-        } else if (body.action === 'reload_kdf_page') {
-          puppeteerPage.reload();
+
+        if (body.action === 'reload_kdf_page') {
+          let encoded_coins_json_url;
+          let encoded_mm2_conf;
+          if (body.coins_json_url) {
+            encoded_coins_json_url = btoa(body.coins_json_url);
+          }
+          if (body.mm2_conf) {
+            encoded_mm2_conf = btoa(JSON.stringify(body.mm2_conf));
+          }
+          if (encoded_coins_json_url || encoded_mm2_conf) {
+            puppeteerPage.goto(
+              `http://127.0.0.1:${process.env.VITE_WEB_PORT}/${encoded_mm2_conf ? '?mm2_conf=' + encoded_mm2_conf : ''}${encoded_coins_json_url ? '&coins_json_url=' + encoded_coins_json_url : ''}`,
+            );
+          } else {
+            puppeteerPage.reload();
+          }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'success', action: 'reload_kdf_page' }));
         } else if (body.action === 'restart_kdf') {
@@ -144,6 +151,7 @@ const server = http.createServer((req, res) => {
             const message = JSON.stringify({
               action: 'restart_kdf',
               mm2_conf: body.mm2_conf,
+              coins_json_url: body.coins_json_url,
               uuid: uuid,
             });
 

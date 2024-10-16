@@ -2,6 +2,8 @@ kdf_zips
 coins_versions
 .env
 mm2.log
+# https://github.com/vitejs/vite/issues/13267#issuecomment-1574703992
+*.timestamp-*.mjs
 
 # Logs
 logs

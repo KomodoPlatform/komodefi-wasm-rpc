@@ -40,7 +40,10 @@ async function connectWs() {
     if (receivedMessageObj.action && receivedMessageObj.action === 'restart_kdf') {
       await STOP_MM2();
       if (receivedMessageObj.mm2_conf) {
-        const conf_js = await checkAndAddCoins(receivedMessageObj.mm2_conf);
+        const conf_js = await checkAndAddCoins(
+          receivedMessageObj.mm2_conf,
+          receivedMessageObj.coins_json_url,
+        );
         await START_MM2(JSON.stringify(conf_js));
       } else {
         const conf_js = await checkAndAddCoins(mm2_conf);
@@ -263,9 +266,11 @@ function updateLogs() {
   logsContainer.scrollTop = logsContainer.scrollHeight;
 }
 
-async function checkAndAddCoins(conf_js) {
+async function checkAndAddCoins(conf_js, coins_json_url) {
   if (!conf_js.coins) {
-    let coinsUrl = new URL('/coins', window.location.origin);
+    let coinsUrl = coins_json_url
+      ? coins_json_url
+      : new URL(`/coins?cachebuster=${Date.now()}`, window.location.origin);
     let coins = await fetch(coinsUrl);
     let coinsJson = await coins.json();
     conf_js.coins = coinsJson;
