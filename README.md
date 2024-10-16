@@ -26,10 +26,11 @@ npm install -g yarn
 cd komodefi-wasm-rpc
 yarn install --frozen-lockfile
 cp .env.example .env
+cp MM2_example.json MM2.json
 ```
 
 - Run the `setup.sh` script to set the group and user id variables in the .env file
-- Change the port values in the .env file if necessary, the `VITE_WASM_BIN` value will be set automatically when updating the wasm lib using the `update_wasm.sh` script. the `VITE_LOGS_LIMIT` value will determine how many logs will be stored in the servers's memory. the `MM2_LOG_FILE` value will determine the log file name
+- Change the port values in the `.env` file if necessary, the `VITE_WASM_BIN` value will be set automatically when updating the wasm lib using the `update_wasm.sh` script. the `VITE_LOGS_LIMIT` value will determine how many logs will be stored in the servers's memory. the `MM2_LOG_FILE` value will determine the log file name
 - Update the MM2.json file with the appropriate values
 
 ## Usage with docker

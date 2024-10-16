@@ -1,5 +1,6 @@
 kdf_zips
 coins_versions
+MM2.json
 .env
 mm2.log
 # https://github.com/vitejs/vite/issues/13267#issuecomment-1574703992
