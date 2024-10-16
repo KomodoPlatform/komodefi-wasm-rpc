@@ -79,7 +79,7 @@ wss.on('connection', (ws) => {
     if (receivedMessageObj.logObject && receivedMessageObj.logObject.line) {
       pushToLimitedArray(LOGSARRAY, receivedMessageObj, process.env.VITE_LOGS_LIMIT);
       fs.appendFileSync(
-        'mm2.log',
+        process.env.MM2_LOG_FILE,
         receivedMessageObj.logObject.time + receivedMessageObj.logObject.line + '\n',
       );
     }

@@ -29,7 +29,7 @@ cp .env.example .env
 ```
 
 - Run the `setup.sh` script to set the group and user id variables in the .env file
-- Change the port values in the .env file if necessary, the `VITE_WASM_BIN` value will be set automatically when updating the wasm lib using the `update_wasm.sh` script. the `VITE_LOGS_LIMIT` value will determine how many logs will be stored in the servers's memory
+- Change the port values in the .env file if necessary, the `VITE_WASM_BIN` value will be set automatically when updating the wasm lib using the `update_wasm.sh` script. the `VITE_LOGS_LIMIT` value will determine how many logs will be stored in the servers's memory. the `MM2_LOG_FILE` value will determine the log file name
 - Update the MM2.json file with the appropriate values
 
 ## Usage with docker
@@ -166,7 +166,7 @@ curl http://localhost:7783/admin -d '{
 curl http://localhost:7783/logs?limit=100
 ```
 
-logs are also written to `mm2.log` file in the root directory and it can be tailed to get the logs in real time
+logs are also written to `mm2.log` ( or the value of `MM2_LOG_FILE` in the .env file ) file in the root directory and it can be tailed to get the logs in real time
 
 ### Know status (GET)
 
