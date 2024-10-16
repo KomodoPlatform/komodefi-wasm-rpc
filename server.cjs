@@ -159,9 +159,14 @@ const server = http.createServer((req, res) => {
             connectedClient.on('message', (message) => {
               const receivedMessage = message.toString();
               const receivedMessageObj = JSON.parse(receivedMessage);
-              if (receivedMessageObj.response && receivedMessageObj.uuid === uuid) {
+              if (receivedMessageObj.message?.action && receivedMessageObj.uuid === uuid) {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ status: 'success', action: receivedMessage.action }));
+                res.end(
+                  JSON.stringify({
+                    status: 'success',
+                    action: receivedMessageObj.message.action,
+                  }),
+                );
               }
             });
           } else {

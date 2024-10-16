@@ -49,7 +49,10 @@ async function connectWs() {
         const conf_js = await checkAndAddCoins(mm2_conf);
         await START_MM2(JSON.stringify(conf_js));
       }
-      sendWsMessage('{"action": "restart_kdf", "response": "success"}', receivedMessageObj.uuid);
+      sendWsMessage(
+        { action: 'restart_kdf', response: 'success', uuid: receivedMessageObj.uuid },
+        receivedMessageObj.uuid,
+      );
     } else if (receivedMessageObj.message && receivedMessageObj.uuid) {
       // outputDiv.textContent = "Received: " + JSON.stringify(JSON.parse(receivedMessage)) + "";
       // outputDiv.textContent = JSON.stringify(request_js);

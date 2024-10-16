@@ -8,7 +8,6 @@ module.exports = {
     {
       name: 'main-server',
       script: 'server.cjs',
-      watch: false,
       autorestart: true,
     },
   ],
