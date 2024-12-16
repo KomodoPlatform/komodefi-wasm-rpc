@@ -90,13 +90,19 @@ Update the coins file by running the following command. It just needs a url that
 
 If you have a coins array in MM2.json, the kdf wasm lib will use that instead of using the coins file downloaded from this script
 
-## Update the wasm lib
+## Update the wasm lib based on url
 
 ```bash
 ./update_wasm.sh https://sdk.devbuilds.komodo.earth/dev/kdf_e65fefe-wasm.zip
 ```
 
 It just needs a url that has a wasm lib in valid format
+
+## Update the wasm lib based on local file
+
+```bash
+./update_wasm_local.sh ~/Downloads/kdf_e65fefe-wasm.zip
+```
 
 ## Misc features
 
